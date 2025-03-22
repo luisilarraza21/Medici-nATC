@@ -4,67 +4,111 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seguimiento de Casos</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            text-align: center;
+        }
+        .user-select, .timer-container {
+            display: none;
+        }
+        .timer-container.active {
+            display: block;
+        }
+        .timer {
+            font-size: 2em;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status.warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .case {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Seguimiento de Casos</h1>
-        </div>
-
+        <h2>Seguimiento de Casos</h2>
         <div class="user-select">
-            <h2>Selecciona tu usuario</h2>
+            <label for="userSelect">Selecciona tu usuario:</label>
             <select id="userSelect">
                 <option value="">Seleccionar...</option>
-                <!-- Los usuarios se cargarán desde la hoja -->
             </select>
             <button id="loginBtn">Iniciar sesión</button>
         </div>
-        
-        <div class="timer-container" style="display: none;">
-            <div class="user-info">
-                <p>Usuario: <span id="currentUser">-</span></p>
-                <button id="logoutBtn">Cerrar sesión</button>
-            </div>
-
-            <h2>Seguimiento de Caso</h2>
-            <div class="timer">00:00:00</div>
-            
-            <div class="case-details">
-                <select id="caseType">
-                    <option value="">Tipo de caso...</option>
-                    <option value="Consulta">Consulta</option>
-                    <option value="Problema técnico">Problema técnico</option>
-                    <option value="Solicitud de cambio">Solicitud de cambio</option>
-                    <option value="Configuración">Configuración</option>
-                    <option value="Capacitación">Capacitación</option>
-                    <option value="Otro">Otro</option>
-                </select>
-                
-                <select id="priority">
-                    <option value="">Prioridad...</option>
-                    <option value="Baja">Baja</option>
-                    <option value="Media">Media</option>
-                    <option value="Alta">Alta</option>
-                    <option value="Crítica">Crítica</option>
-                </select>
-            </div>
-            
-            <div class="buttons">
-                <button id="startBtn">Iniciar caso</button>
-                <button id="pauseBtn" disabled>Pausar</button>
-                <button id="stopBtn" disabled>Finalizar caso</button>
-            </div>
-            
-            <div class="notes">
-                <textarea id="caseNotes" placeholder="Notas breves (opcional)"></textarea>
-            </div>
-
-            <div class="status" id="statusMessage"></div>
+        <div class="timer-container">
+            <p>Usuario actual: <span id="currentUser"></span></p>
+            <button id="logoutBtn">Cerrar sesión</button>
+            <h3>Nuevo caso</h3>
+            <label for="caseType">Tipo de caso:</label>
+            <select id="caseType">
+                <option value="">Seleccionar...</option>
+                <option value="Consulta">Consulta</option>
+                <option value="Incidencia">Incidencia</option>
+                <option value="Reclamo">Reclamo</option>
+            </select>
+            <br><br>
+            <label for="priority">Prioridad:</label>
+            <select id="priority">
+                <option value="">Seleccionar...</option>
+                <option value="Alta">Alta</option>
+                <option value="Media">Media</option>
+                <option value="Baja">Baja</option>
+            </select>
+            <br><br>
+            <label for="caseNotes">Notas:</label>
+            <textarea id="caseNotes"></textarea>
+            <br><br>
+            <button id="startNewCaseBtn">Iniciar nuevo caso</button>
+            <h3>Casos activos</h3>
+            <div id="activeCases"></div>
+            <div id="statusMessage" class="status"></div>
         </div>
     </div>
-    
     <script src="script.js"></script>
 </body>
 </html>
