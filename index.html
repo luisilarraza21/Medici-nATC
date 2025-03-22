@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Casos</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Seguimiento de Casos</h1>
+        </div>
+
+        <div class="user-select">
+            <h2>Selecciona tu usuario</h2>
+            <select id="userSelect">
+                <option value="">Seleccionar...</option>
+                <!-- Los usuarios se cargarán desde la hoja -->
+            </select>
+            <button id="loginBtn">Iniciar sesión</button>
+        </div>
+        
+        <div class="timer-container" style="display: none;">
+            <div class="user-info">
+                <p>Usuario: <span id="currentUser">-</span></p>
+                <button id="logoutBtn">Cerrar sesión</button>
+            </div>
+
+            <h2>Seguimiento de Caso</h2>
+            <div class="timer">00:00:00</div>
+            
+            <div class="case-details">
+                <select id="caseType">
+                    <option value="">Tipo de caso...</option>
+                    <option value="Consulta">Consulta</option>
+                    <option value="Problema técnico">Problema técnico</option>
+                    <option value="Solicitud de cambio">Solicitud de cambio</option>
+                    <option value="Configuración">Configuración</option>
+                    <option value="Capacitación">Capacitación</option>
+                    <option value="Otro">Otro</option>
+                </select>
+                
+                <select id="priority">
+                    <option value="">Prioridad...</option>
+                    <option value="Baja">Baja</option>
+                    <option value="Media">Media</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Crítica">Crítica</option>
+                </select>
+            </div>
+            
+            <div class="buttons">
+                <button id="startBtn">Iniciar caso</button>
+                <button id="pauseBtn" disabled>Pausar</button>
+                <button id="stopBtn" disabled>Finalizar caso</button>
+            </div>
+            
+            <div class="notes">
+                <textarea id="caseNotes" placeholder="Notas breves (opcional)"></textarea>
+            </div>
+
+            <div class="status" id="statusMessage"></div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
