@@ -2,13 +2,7 @@
 const API_URL = "https://atc-proxy.vercel.app/api/proxy";
 
 // Variables globales
-let timer;
-let seconds = 0;
-let minutes = 0;
-let hours = 0;
-let isRunning = false;
-let startTime;
-let pausedTime = 0;
+let cases = []; // Array para almacenar los casos activos
 let userData = null;
 
 // Elementos DOM
@@ -17,21 +11,17 @@ const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const currentUserSpan = document.getElementById('currentUser');
 const timerContainer = document.querySelector('.timer-container');
-const timerDisplay = document.querySelector('.timer');
-const startBtn = document.getElementById('startBtn');
-const pauseBtn = document.getElementById('pauseBtn');
-const stopBtn = document.getElementById('stopBtn');
+const activeCasesContainer = document.getElementById('activeCases');
 const caseType = document.getElementById('caseType');
 const priority = document.getElementById('priority');
 const caseNotes = document.getElementById('caseNotes');
+const startNewCaseBtn = document.getElementById('startNewCaseBtn');
 const statusMessage = document.getElementById('statusMessage');
 
 // Eventos
 loginBtn.addEventListener('click', selectUser);
 logoutBtn.addEventListener('click', logout);
-startBtn.addEventListener('click', startTimer);
-pauseBtn.addEventListener('click', pauseTimer);
-stopBtn.addEventListener('click', stopTimer);
+startNewCaseBtn.addEventListener('click', startNewCase);
 
 // Cargar usuarios desde el proxy al iniciar
 window.onload = function() {
@@ -41,7 +31,7 @@ window.onload = function() {
         userData = JSON.parse(savedUser);
         showTimerInterface();
     }
-}
+};
 
 // Cargar usuarios desde el proxy
 function loadUsers() {
@@ -99,11 +89,14 @@ function selectUser() {
 }
 
 function logout() {
+    if (cases.length > 0) {
+        showStatus("No puedes cerrar sesión con casos activos", "error");
+        return;
+    }
     document.querySelector('.user-select').style.display = 'block';
     timerContainer.style.display = 'none';
     localStorage.removeItem('currentUser');
     userData = null;
-    resetTimer();
 }
 
 function showTimerInterface() {
@@ -112,54 +105,74 @@ function showTimerInterface() {
     currentUserSpan.textContent = userData.name;
 }
 
-function startTimer() {
+function startNewCase() {
     if (!caseType.value || !priority.value) {
         showStatus("Por favor selecciona el tipo de caso y la prioridad", "warning");
         return;
     }
-    
-    if (!isRunning) {
-        startTime = new Date().getTime() - (pausedTime * 1000);
-        isRunning = true;
-        timer = setInterval(updateTimer, 1000);
-        
-        startBtn.disabled = true;
-        pauseBtn.disabled = false;
-        stopBtn.disabled = false;
-        
-        caseType.disabled = true;
-        priority.disabled = true;
-        
-        showStatus("Cronómetro iniciado", "success");
+
+    const caseId = Date.now(); // Usamos timestamp como ID único para cada caso
+    const newCase = {
+        id: caseId,
+        type: caseType.value,
+        priority: priority.value,
+        notes: caseNotes.value,
+        seconds: 0,
+        minutes: 0,
+        hours: 0,
+        isRunning: false,
+        startTime: null,
+        pausedTime: 0,
+        timer: null
+    };
+
+    cases.push(newCase);
+    renderActiveCases();
+
+    // Iniciar el caso inmediatamente
+    startCase(caseId);
+
+    // Limpiar los campos para un nuevo caso
+    caseType.value = "";
+    priority.value = "";
+    caseNotes.value = "";
+}
+
+function startCase(caseId) {
+    const caseObj = cases.find(c => c.id === caseId);
+    if (!caseObj.isRunning) {
+        caseObj.startTime = new Date().getTime() - (caseObj.pausedTime * 1000);
+        caseObj.isRunning = true;
+        caseObj.timer = setInterval(() => updateCaseTimer(caseId), 1000);
+        renderActiveCases();
+        showStatus(`Caso ${caseObj.type} iniciado`, "success");
     }
 }
 
-function pauseTimer() {
-    if (isRunning) {
-        clearInterval(timer);
-        isRunning = false;
-        pausedTime = (hours * 3600) + (minutes * 60) + seconds;
-        
-        startBtn.disabled = false;
-        pauseBtn.disabled = true;
-        startBtn.textContent = "Reanudar";
-        
-        showStatus("Cronómetro en pausa", "warning");
+function pauseCase(caseId) {
+    const caseObj = cases.find(c => c.id === caseId);
+    if (caseObj.isRunning) {
+        clearInterval(caseObj.timer);
+        caseObj.isRunning = false;
+        caseObj.pausedTime = (caseObj.hours * 3600) + (caseObj.minutes * 60) + caseObj.seconds;
+        renderActiveCases();
+        showStatus(`Caso ${caseObj.type} en pausa`, "warning");
     }
 }
 
-function stopTimer() {
-    if (!isRunning && pausedTime === 0) {
+function stopCase(caseId) {
+    const caseObj = cases.find(c => c.id === caseId);
+    if (!caseObj.isRunning && caseObj.pausedTime === 0) {
         showStatus("No hay un caso activo para finalizar", "error");
         return;
     }
-    
-    clearInterval(timer);
-    
+
+    clearInterval(caseObj.timer);
+
     const endTime = new Date();
-    const startDateTime = new Date(startTime);
-    const duration = Math.floor((endTime.getTime() - startTime) / 1000 / 60); // Duración en minutos
-    
+    const startDateTime = new Date(caseObj.startTime);
+    const duration = Math.floor((endTime.getTime() - caseObj.startTime) / 1000 / 60); // Duración en minutos
+
     const caseData = {
         user: userData.name,
         position: userData.position,
@@ -167,52 +180,54 @@ function stopTimer() {
         startTime: formatTime(startDateTime),
         endTime: formatTime(endTime),
         duration: duration,
-        type: caseType.value,
-        priority: priority.value,
-        notes: caseNotes.value
+        type: caseObj.type,
+        priority: caseObj.priority,
+        notes: caseObj.notes
     };
-    
+
     saveCase(caseData);
-    resetTimer();
+
+    // Eliminar el caso de la lista de casos activos
+    cases = cases.filter(c => c.id !== caseId);
+    renderActiveCases();
 }
 
-function updateTimer() {
-    seconds++;
-    if (seconds >= 60) {
-        seconds = 0;
-        minutes++;
-        if (minutes >= 60) {
-            minutes = 0;
-            hours++;
+function updateCaseTimer(caseId) {
+    const caseObj = cases.find(c => c.id === caseId);
+    caseObj.seconds++;
+    if (caseObj.seconds >= 60) {
+        caseObj.seconds = 0;
+        caseObj.minutes++;
+        if (caseObj.minutes >= 60) {
+            caseObj.minutes = 0;
+            caseObj.hours++;
         }
     }
-    
-    timerDisplay.textContent = 
-        (hours < 10 ? "0" + hours : hours) + ":" + 
-        (minutes < 10 ? "0" + minutes : minutes) + ":" + 
-        (seconds < 10 ? "0" + seconds : seconds);
+    renderActiveCases();
 }
 
-function resetTimer() {
-    clearInterval(timer);
-    isRunning = false;
-    seconds = 0;
-    minutes = 0;
-    hours = 0;
-    pausedTime = 0;
-    
-    timerDisplay.textContent = "00:00:00";
-    
-    startBtn.disabled = false;
-    startBtn.textContent = "Iniciar caso";
-    pauseBtn.disabled = true;
-    stopBtn.disabled = true;
-    
-    caseType.disabled = false;
-    priority.disabled = false;
-    caseType.value = "";
-    priority.value = "";
-    caseNotes.value = "";
+function renderActiveCases() {
+    activeCasesContainer.innerHTML = '';
+    cases.forEach(caseObj => {
+        const caseElement = document.createElement('div');
+        caseElement.className = 'case';
+        caseElement.innerHTML = `
+            <h3>${caseObj.type} - ${caseObj.priority}</h3>
+            <p>Notas: ${caseObj.notes || 'Ninguna'}</p>
+            <div class="timer">
+                ${(caseObj.hours < 10 ? "0" + caseObj.hours : caseObj.hours)}:${(caseObj.minutes < 10 ? "0" + caseObj.minutes : caseObj.minutes)}:${(caseObj.seconds < 10 ? "0" + caseObj.seconds : caseObj.seconds)}
+            </div>
+            <button onclick="startCase(${caseObj.id})" ${caseObj.isRunning ? 'disabled' : ''}>${caseObj.isRunning ? 'Corriendo' : 'Reanudar'}</button>
+            <button onclick="pauseCase(${caseObj.id})" ${!caseObj.isRunning ? 'disabled' : ''}>Pausar</button>
+            <button onclick="stopCase(${caseObj.id})">Finalizar</button>
+        `;
+        activeCasesContainer.appendChild(caseElement);
+    });
+
+    // Mostrar notificación si hay casos activos
+    if (cases.length > 0) {
+        showNotification(`${cases.length} caso(s) activo(s). No olvides finalizarlos.`);
+    }
 }
 
 function formatDate(date) {
@@ -225,7 +240,7 @@ function formatTime(date) {
 
 function saveCase(caseData) {
     showStatus("Guardando caso...", "warning");
-    
+
     fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify(caseData),
@@ -255,9 +270,9 @@ function saveCase(caseData) {
 }
 
 function saveLocally(caseData) {
-    let cases = JSON.parse(localStorage.getItem('casesData') || '[]');
-    cases.push(caseData);
-    localStorage.setItem('casesData', JSON.stringify(cases));
+    let casesData = JSON.parse(localStorage.getItem('casesData') || '[]');
+    casesData.push(caseData);
+    localStorage.setItem('casesData', JSON.stringify(casesData));
 }
 
 function showStatus(message, type) {
@@ -267,4 +282,22 @@ function showStatus(message, type) {
         statusMessage.textContent = "";
         statusMessage.className = "status";
     }, 3000);
+}
+
+// Notificaciones de escritorio
+function showNotification(message) {
+    if (!("Notification" in window)) {
+        console.log("Este navegador no soporta notificaciones de escritorio");
+        return;
+    }
+
+    if (Notification.permission === "granted") {
+        new Notification(message);
+    } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                new Notification(message);
+            }
+        });
+    }
 }
