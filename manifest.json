@@ -1,14 +1,19 @@
 {
-  "name": "Seguimiento de Casos ATC",
-  "short_name": "Casos ATC",
-  "start_url": "index.html",
+  "name": "Medición ATC Láser",
+  "short_name": "ATC Láser",
+  "start_url": ".",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4CAF50",
+  "background_color": "#f0f0f0",
+  "theme_color": "#007BFF",
   "icons": [
     {
       "src": "icon.png",
       "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
