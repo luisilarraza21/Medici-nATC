@@ -189,4 +189,82 @@ function updateTimer() {
     
     timerDisplay.textContent = 
         (hours < 10 ? "0" + hours : hours) + ":" + 
-        (minutes <
+        (minutes < 10 ? "0" + minutes : minutes) + ":" + 
+        (seconds < 10 ? "0" + seconds : seconds);
+}
+
+function resetTimer() {
+    clearInterval(timer);
+    isRunning = false;
+    seconds = 0;
+    minutes = 0;
+    hours = 0;
+    pausedTime = 0;
+    
+    timerDisplay.textContent = "00:00:00";
+    
+    startBtn.disabled = false;
+    startBtn.textContent = "Iniciar caso";
+    pauseBtn.disabled = true;
+    stopBtn.disabled = true;
+    
+    caseType.disabled = false;
+    priority.disabled = false;
+    caseType.value = "";
+    priority.value = "";
+    caseNotes.value = "";
+}
+
+function formatDate(date) {
+    return date.toISOString().split('T')[0];
+}
+
+function formatTime(date) {
+    return date.toTimeString().split(' ')[0];
+}
+
+function saveCase(caseData) {
+    showStatus("Guardando caso...", "warning");
+    
+    fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify(caseData),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.result === "success") {
+            showStatus("Caso finalizado y guardado correctamente", "success");
+        } else {
+            showStatus("Error al guardar: " + (data.error || "Desconocido"), "error");
+            saveLocally(caseData);
+        }
+    })
+    .catch(error => {
+        console.error("Error al guardar caso:", error);
+        showStatus("Error de conexión: " + error.message, "warning");
+        saveLocally(caseData);
+    });
+}
+
+function saveLocally(caseData) {
+    let cases = JSON.parse(localStorage.getItem('casesData') || '[]');
+    cases.push(caseData);
+    localStorage.setItem('casesData', JSON.stringify(cases));
+}
+
+function showStatus(message, type) {
+    statusMessage.textContent = message;
+    statusMessage.className = "status " + type;
+    setTimeout(() => {
+        statusMessage.textContent = "";
+        statusMessage.className = "status";
+    }, 3000);
+}
