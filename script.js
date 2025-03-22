@@ -1,5 +1,5 @@
-// Configuración - REEMPLAZA ESTO con tu URL de Google Apps Script
-const API_URL = https://script.google.com/macros/s/AKfycbzA0iubQyNb5PmGUsEo8ARYsv1Npzz8FdabqGhIdWqDR5b_5shU_2vufdjNcepgPnD0/exec;
+// Configuración - URL de tu Google Apps Script
+const API_URL = "https://script.google.com/macros/s/AKfycbw5BpjSO7huY3uscaiMgBtfJliGakrIc5VIY3rHlWnfvWHhmtfZukvJaKgh_Gn82ACx/exec";
 
 // Variables globales
 let timer;
@@ -33,66 +33,35 @@ startBtn.addEventListener('click', startTimer);
 pauseBtn.addEventListener('click', pauseTimer);
 stopBtn.addEventListener('click', stopTimer);
 
-// Actualiza esta función en tu script.js
-function loadUsers() {
-    // Intenta cargar usuarios desde Google Sheets
-    if (API_URL && API_URL !== "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUÍ") {
-        fetch(API_URL + "?action=getUsers")
-        .then(response => response.json())
-        .then(data => {
-            if (data.users && data.users.length > 0) {
-                userSelect.innerHTML = '<option value="">Seleccionar...</option>';
-                
-                data.users.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = JSON.stringify({ name: user[0], position: user[1] });
-                    option.textContent = `${user[0]} - ${user[1]}`;
-                    userSelect.appendChild(option);
-                });
-                
-                showStatus("Usuarios cargados correctamente", "success");
-            } else {
-                showStatus("No se encontraron usuarios", "warning");
-                loadDefaultUsers();
-            }
-        })
-        .catch(error => {
-            console.error("Error cargando usuarios:", error);
-            showStatus("Error cargando usuarios. Usando lista por defecto", "warning");
-            loadDefaultUsers();
-        });
-    } else {
-        loadDefaultUsers();
-    }
-}
-
-// Función de respaldo con usuarios predeterminados
-function loadDefaultUsers() {
-    const userOptions = [
-        { name: "Ana Pérez", position: "Agente ATC" },
-        { name: "Carlos Mendoza", position: "Técnico" },
-        { name: "María García", position: "Supervisor ATC" }
-    ];
-    
-    userSelect.innerHTML = '<option value="">Seleccionar...</option>';
-    
-    userOptions.forEach(user => {
-        const option = document.createElement('option');
-        option.value = JSON.stringify({ name: user.name, position: user.position });
-        option.textContent = `${user.name} - ${user.position}`;
-        userSelect.appendChild(option);
-    });
-}
-
-// Comprobar si hay un usuario guardado
+// Cargar usuarios desde Google Sheets al iniciar
 window.onload = function() {
     loadUsers();
-    
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
         userData = JSON.parse(savedUser);
         showTimerInterface();
     }
+}
+
+// Cargar usuarios desde Google Sheets
+function loadUsers() {
+    fetch(`${API_URL}?action=getUsers`, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        const users = data.users;
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = JSON.stringify({ name: user[0], position: user[1] });
+            option.textContent = `${user[0]} - ${user[1]}`;
+            userSelect.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error("Error al cargar usuarios:", error);
+        showStatus("No se pudieron cargar los usuarios", "error");
+    });
 }
 
 // Funciones
@@ -129,14 +98,12 @@ function startTimer() {
     if (!isRunning) {
         startTime = new Date().getTime() - (pausedTime * 1000);
         isRunning = true;
-        
         timer = setInterval(updateTimer, 1000);
         
         startBtn.disabled = true;
         pauseBtn.disabled = false;
         stopBtn.disabled = false;
         
-        // Deshabilitar selects
         caseType.disabled = true;
         priority.disabled = true;
         
@@ -166,7 +133,6 @@ function stopTimer() {
     
     clearInterval(timer);
     
-    // Recopilar datos del caso
     const endTime = new Date();
     const startDateTime = new Date(startTime);
     const duration = Math.floor((endTime.getTime() - startTime) / 1000 / 60); // Duración en minutos
@@ -183,27 +149,21 @@ function stopTimer() {
         notes: caseNotes.value
     };
     
-    // Guardar los datos
     saveCase(caseData);
-    
-    // Resetear el cronómetro
     resetTimer();
 }
 
 function updateTimer() {
     seconds++;
-    
     if (seconds >= 60) {
         seconds = 0;
         minutes++;
-        
         if (minutes >= 60) {
             minutes = 0;
             hours++;
         }
     }
     
-    // Actualizar la pantalla
     timerDisplay.textContent = 
         (hours < 10 ? "0" + hours : hours) + ":" + 
         (minutes < 10 ? "0" + minutes : minutes) + ":" + 
@@ -225,7 +185,6 @@ function resetTimer() {
     pauseBtn.disabled = true;
     stopBtn.disabled = true;
     
-    // Habilitar selects y limpiar
     caseType.disabled = false;
     priority.disabled = false;
     caseType.value = "";
@@ -244,35 +203,30 @@ function formatTime(date) {
 function saveCase(caseData) {
     showStatus("Guardando caso...", "warning");
     
-    // Intentar guardar en Google Sheets
-    if (API_URL && API_URL !== "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUÍ") {
-        fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify(caseData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.result === "success") {
-                showStatus("Caso finalizado y guardado correctamente", "success");
-            } else {
-                showStatus("Error al guardar en línea. Guardado localmente", "warning");
-                saveLocally(caseData);
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            showStatus("Error de conexión. Guardado localmente", "warning");
+    fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify(caseData),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.result === "success") {
+            showStatus("Caso finalizado y guardado correctamente", "success");
+        } else {
+            showStatus("Error al guardar en línea", "error");
             saveLocally(caseData);
-        });
-    } else {
-        // Si no hay URL configurada, guardar localmente
-        showStatus("API no configurada. Guardado localmente", "warning");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        showStatus("Error de conexión. Guardado localmente", "warning");
         saveLocally(caseData);
-    }
+    });
 }
 
 function saveLocally(caseData) {
-    // Guardar como respaldo en localStorage
     let cases = JSON.parse(localStorage.getItem('casesData') || '[]');
     cases.push(caseData);
     localStorage.setItem('casesData', JSON.stringify(cases));
@@ -281,8 +235,6 @@ function saveLocally(caseData) {
 function showStatus(message, type) {
     statusMessage.textContent = message;
     statusMessage.className = "status " + type;
-    
-    // Limpiar después de unos segundos
     setTimeout(() => {
         statusMessage.textContent = "";
         statusMessage.className = "status";
