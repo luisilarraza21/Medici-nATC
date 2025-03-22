@@ -1,5 +1,5 @@
-// Configuración - URL de tu Google Apps Script (temporal hasta que usemos el proxy)
-const API_URL = "https://script.google.com/macros/s/AKfycbw5BpjSO7huY3uscaiMgBtfJliGakrIc5VIY3rHlWnfvWHhmtfZukvJaKgh_Gn82ACx/exec";
+// Configuración - URL de tu proxy en Vercel
+const API_URL = "https://atc-proxy.vercel.app/api/proxy";
 
 // Variables globales
 let timer;
@@ -33,7 +33,7 @@ startBtn.addEventListener('click', startTimer);
 pauseBtn.addEventListener('click', pauseTimer);
 stopBtn.addEventListener('click', stopTimer);
 
-// Cargar usuarios desde Google Sheets al iniciar
+// Cargar usuarios desde el proxy al iniciar
 window.onload = function() {
     loadUsers();
     const savedUser = localStorage.getItem('currentUser');
@@ -43,17 +43,27 @@ window.onload = function() {
     }
 }
 
-// Cargar usuarios desde Google Sheets
+// Cargar usuarios desde el proxy
 function loadUsers() {
     fetch(`${API_URL}?action=getUsers`, {
-        method: 'GET',
-        mode: 'no-cors' // Usamos no-cors para evitar el bloqueo de CORS temporalmente
+        method: 'GET'
     })
     .then(response => {
-        // Con no-cors, no podemos leer la respuesta directamente
-        // Usamos un respaldo local mientras configuramos el proxy
-        showStatus("Usuarios cargados (usando método temporal).", "warning");
-        fetchLocalUsers();
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        const users = data.users;
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = JSON.stringify({ name: user[0], position: user[1] });
+            option.textContent = `${user[0]} - ${user[1]}`;
+            userSelect.appendChild(option);
+        });
+        // Guardamos los usuarios localmente como respaldo
+        localStorage.setItem('localUsers', JSON.stringify(users));
     })
     .catch(error => {
         console.error("Error al cargar usuarios:", error);
@@ -62,11 +72,11 @@ function loadUsers() {
     });
 }
 
-// Respaldo local para usuarios (temporal)
+// Respaldo local para usuarios
 function fetchLocalUsers() {
     const localUsers = JSON.parse(localStorage.getItem('localUsers') || '[]');
     if (localUsers.length === 0) {
-        showStatus("No hay usuarios disponibles sin conexión. Configura el proxy para solucionar esto.", "error");
+        showStatus("No hay usuarios disponibles sin conexión.", "error");
         return;
     }
     localUsers.forEach(user => {
@@ -179,72 +189,4 @@ function updateTimer() {
     
     timerDisplay.textContent = 
         (hours < 10 ? "0" + hours : hours) + ":" + 
-        (minutes < 10 ? "0" + minutes : minutes) + ":" + 
-        (seconds < 10 ? "0" + seconds : seconds);
-}
-
-function resetTimer() {
-    clearInterval(timer);
-    isRunning = false;
-    seconds = 0;
-    minutes = 0;
-    hours = 0;
-    pausedTime = 0;
-    
-    timerDisplay.textContent = "00:00:00";
-    
-    startBtn.disabled = false;
-    startBtn.textContent = "Iniciar caso";
-    pauseBtn.disabled = true;
-    stopBtn.disabled = true;
-    
-    caseType.disabled = false;
-    priority.disabled = false;
-    caseType.value = "";
-    priority.value = "";
-    caseNotes.value = "";
-}
-
-function formatDate(date) {
-    return date.toISOString().split('T')[0];
-}
-
-function formatTime(date) {
-    return date.toTimeString().split(' ')[0];
-}
-
-function saveCase(caseData) {
-    showStatus("Guardando caso...", "warning");
-    
-    fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify(caseData),
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        mode: 'no-cors' // Usamos no-cors temporalmente
-    })
-    .then(response => {
-        showStatus("Caso enviado (método temporal). Configura el proxy para confirmar.", "success");
-    })
-    .catch(error => {
-        console.error("Error al guardar caso:", error);
-        showStatus("Error de conexión. Guardado localmente.", "warning");
-        saveLocally(caseData);
-    });
-}
-
-function saveLocally(caseData) {
-    let cases = JSON.parse(localStorage.getItem('casesData') || '[]');
-    cases.push(caseData);
-    localStorage.setItem('casesData', JSON.stringify(cases));
-}
-
-function showStatus(message, type) {
-    statusMessage.textContent = message;
-    statusMessage.className = "status " + type;
-    setTimeout(() => {
-        statusMessage.textContent = "";
-        statusMessage.className = "status";
-    }, 3000);
-}
+        (minutes <
