@@ -4,6 +4,8 @@ const API_URL = "https://atc-proxy.vercel.app/api/proxy";
 // Variables globales
 let cases = []; // Array para almacenar los casos activos
 let userData = null;
+let lastNotificationTime = 0; // Para rastrear la última vez que se mostró una notificación
+const NOTIFICATION_INTERVAL = 30 * 60 * 1000; // 30 minutos en milisegundos
 
 // Elementos DOM
 const userSelect = document.getElementById('userSelect');
@@ -22,6 +24,9 @@ const statusMessage = document.getElementById('statusMessage');
 loginBtn.addEventListener('click', selectUser);
 logoutBtn.addEventListener('click', logout);
 startNewCaseBtn.addEventListener('click', startNewCase);
+
+// Iniciar el temporizador para notificaciones
+setInterval(checkForNotifications, 60 * 1000); // Verifica cada minuto si es hora de mostrar una notificación
 
 // Cargar usuarios desde el proxy al iniciar
 window.onload = function() {
@@ -223,11 +228,6 @@ function renderActiveCases() {
         `;
         activeCasesContainer.appendChild(caseElement);
     });
-
-    // Mostrar notificación si hay casos activos
-    if (cases.length > 0) {
-        showNotification(`${cases.length} caso(s) activo(s). No olvides finalizarlos.`);
-    }
 }
 
 function formatDate(date) {
@@ -284,7 +284,17 @@ function showStatus(message, type) {
     }, 3000);
 }
 
-// Notificaciones de escritorio
+// Notificaciones de escritorio cada 30 minutos
+function checkForNotifications() {
+    if (cases.length === 0) return; // No hay casos activos, no mostramos notificación
+
+    const currentTime = Date.now();
+    if (currentTime - lastNotificationTime >= NOTIFICATION_INTERVAL) {
+        showNotification(`${cases.length} caso(s) activo(s). No olvides finalizarlos.`);
+        lastNotificationTime = currentTime;
+    }
+}
+
 function showNotification(message) {
     if (!("Notification" in window)) {
         console.log("Este navegador no soporta notificaciones de escritorio");
