@@ -219,16 +219,47 @@ function renderActiveCases() {
     cases.forEach(caseObj => {
         const caseElement = document.createElement('div');
         caseElement.className = 'case';
-        caseElement.innerHTML = `
-            <h3>${caseObj.type} - ${caseObj.priority}</h3>
-            <p>Notas: ${caseObj.notes || 'Ninguna'}</p>
-            <div class="timer">
+        caseElement.style.display = 'flex';
+        caseElement.style.justifyContent = 'space-between';
+        caseElement.style.alignItems = 'center';
+        caseElement.style.padding = '8px';
+        caseElement.style.margin = '5px 0';
+        caseElement.style.border = '1px solid #ccc';
+        caseElement.style.borderRadius = '5px';
+        caseElement.style.backgroundColor = '#f9f9f9';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.style.flex = '1';
+        infoDiv.innerHTML = `
+            <strong>${caseObj.type} - ${caseObj.priority}</strong>
+            <div class="timer" style="font-size: 1.2em; margin-top: 5px;">
                 ${(caseObj.hours < 10 ? "0" + caseObj.hours : caseObj.hours)}:${(caseObj.minutes < 10 ? "0" + caseObj.minutes : caseObj.minutes)}:${(caseObj.seconds < 10 ? "0" + caseObj.seconds : caseObj.seconds)}
             </div>
-            <button onclick="startCase(${caseObj.id})" ${caseObj.isRunning ? 'disabled' : ''}>${caseObj.isRunning ? 'Corriendo' : 'Reanudar'}</button>
-            <button onclick="pauseCase(${caseObj.id})" ${!caseObj.isRunning ? 'disabled' : ''}>Pausar</button>
-            <button onclick="stopCase(${caseObj.id})">Finalizar</button>
         `;
+
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.style.display = 'flex';
+        buttonsDiv.style.gap = '5px';
+
+        const toggleButton = document.createElement('button');
+        toggleButton.textContent = caseObj.isRunning ? 'Pausar' : 'Reanudar';
+        toggleButton.disabled = caseObj.isRunning ? false : false;
+        toggleButton.onclick = () => caseObj.isRunning ? pauseCase(caseObj.id) : startCase(caseObj.id);
+        toggleButton.style.padding = '5px 10px';
+        toggleButton.style.fontSize = '0.9em';
+
+        const stopButton = document.createElement('button');
+        stopButton.textContent = 'Finalizar';
+        stopButton.onclick = () => stopCase(caseObj.id);
+        stopButton.style.padding = '5px 10px';
+        stopButton.style.fontSize = '0.9em';
+
+        buttonsDiv.appendChild(toggleButton);
+        buttonsDiv.appendChild(stopButton);
+
+        caseElement.appendChild(infoDiv);
+        caseElement.appendChild(buttonsDiv);
+
         activeCasesContainer.appendChild(caseElement);
     });
 }
