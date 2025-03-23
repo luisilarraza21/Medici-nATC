@@ -8,7 +8,6 @@ let lastNotificationTime = 0; // Para rastrear la última vez que se mostró una
 const NOTIFICATION_INTERVAL = 30 * 60 * 1000; // 30 minutos en milisegundos
 
 // Elementos DOM
-console.log("Inicializando elementos DOM...");
 const userSelect = document.getElementById('userSelect');
 const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
@@ -20,26 +19,23 @@ const priority = document.getElementById('priority');
 const caseNotes = document.getElementById('caseNotes');
 const startNewCaseBtn = document.getElementById('startNewCaseBtn');
 const statusMessage = document.getElementById('statusMessage');
-console.log("Elementos DOM inicializados:", { userSelect, loginBtn, logoutBtn, currentUserSpan, timerContainer, activeCasesContainer, caseType, priority, caseNotes, startNewCaseBtn, statusMessage });
 
 // Eventos
-console.log("Añadiendo eventos...");
 loginBtn.addEventListener('click', selectUser);
 logoutBtn.addEventListener('click', logout);
 startNewCaseBtn.addEventListener('click', startNewCase);
-console.log("Eventos añadidos.");
 
 // Iniciar el temporizador para notificaciones
-console.log("Iniciando temporizador para notificaciones...");
 setInterval(checkForNotifications, 60 * 1000); // Verifica cada minuto si es hora de mostrar una notificación
 
 // Cargar usuarios desde el proxy al iniciar
 window.onload = function() {
-    console.log("Evento window.onload ejecutado.");
+    // Mostrar el formulario de selección de usuario al inicio
+    document.querySelector('.user-select').style.display = 'block';
+    
     loadUsers();
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-        console.log("Usuario guardado encontrado:", savedUser);
         userData = JSON.parse(savedUser);
         showTimerInterface();
     }
@@ -47,19 +43,16 @@ window.onload = function() {
 
 // Cargar usuarios desde el proxy
 function loadUsers() {
-    console.log("Cargando usuarios desde el proxy...");
     fetch(`${API_URL}?action=getUsers`, {
         method: 'GET'
     })
     .then(response => {
-        console.log("Respuesta del proxy recibida:", response);
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
         return response.json();
     })
     .then(data => {
-        console.log("Datos de usuarios recibidos:", data);
         const users = data.users;
         users.forEach(user => {
             const option = document.createElement('option');
@@ -79,7 +72,6 @@ function loadUsers() {
 
 // Respaldo local para usuarios
 function fetchLocalUsers() {
-    console.log("Cargando usuarios locales...");
     const localUsers = JSON.parse(localStorage.getItem('localUsers') || '[]');
     if (localUsers.length === 0) {
         showStatus("No hay usuarios disponibles sin conexión.", "error");
@@ -95,7 +87,6 @@ function fetchLocalUsers() {
 
 // Funciones
 function selectUser() {
-    console.log("Función selectUser ejecutada.");
     if (userSelect.value) {
         userData = JSON.parse(userSelect.value);
         localStorage.setItem('currentUser', JSON.stringify(userData));
@@ -106,7 +97,6 @@ function selectUser() {
 }
 
 function logout() {
-    console.log("Función logout ejecutada.");
     if (cases.length > 0) {
         showStatus("No puedes cerrar sesión con casos activos", "error");
         return;
@@ -118,14 +108,12 @@ function logout() {
 }
 
 function showTimerInterface() {
-    console.log("Mostrando interfaz del temporizador...");
     document.querySelector('.user-select').style.display = 'none';
     timerContainer.style.display = 'block';
     currentUserSpan.textContent = userData.name;
 }
 
 function startNewCase() {
-    console.log("Función startNewCase ejecutada.");
     if (!caseType.value || !priority.value) {
         showStatus("Por favor selecciona el tipo de caso y la prioridad", "warning");
         return;
@@ -159,7 +147,6 @@ function startNewCase() {
 }
 
 function startCase(caseId) {
-    console.log("Iniciando caso:", caseId);
     const caseObj = cases.find(c => c.id === caseId);
     if (!caseObj.isRunning) {
         caseObj.startTime = new Date().getTime() - (caseObj.pausedTime * 1000);
@@ -171,7 +158,6 @@ function startCase(caseId) {
 }
 
 function pauseCase(caseId) {
-    console.log("Pausando caso:", caseId);
     const caseObj = cases.find(c => c.id === caseId);
     if (caseObj.isRunning) {
         clearInterval(caseObj.timer);
@@ -183,7 +169,6 @@ function pauseCase(caseId) {
 }
 
 function stopCase(caseId) {
-    console.log("Finalizando caso:", caseId);
     const caseObj = cases.find(c => c.id === caseId);
     if (!caseObj.isRunning && caseObj.pausedTime === 0) {
         showStatus("No hay un caso activo para finalizar", "error");
