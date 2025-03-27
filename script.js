@@ -7,6 +7,36 @@ let userData = null;
 let lastNotificationTime = 0; // Para rastrear la última vez que se mostró una notificación
 const NOTIFICATION_INTERVAL = 30 * 60 * 1000; // 30 minutos en milisegundos
 
+// Tareas por tipo de usuario
+const ATC_TASKS = [
+    "Consulta",
+    "Incidencia",
+    "Reclamo",
+    "Seguimiento",
+    "Gestión de Pedido",
+    "Soporte Técnico",
+    "Configuración",
+    "Actualización",
+    "Capacitación",
+    "Revisión de Datos",
+    "Otros"
+];
+
+const YUMAIRA_LUIS_TASKS = [
+    "Reunión con prospecto",
+    "Llamada de revisión",
+    "Reunión con alianza gremial"
+];
+
+const ASAF_TASKS = [
+    "Modificación o realización de presentación",
+    "Elaboración de talonario de contingencia",
+    "Post para Instagram",
+    "Video para Instagram",
+    "Post para LinkedIn",
+    "Elaboración de plantilla de documentos fiscales"
+];
+
 // Elementos DOM
 const userSelect = document.getElementById('userSelect');
 const loginBtn = document.getElementById('loginBtn');
@@ -91,9 +121,35 @@ function selectUser() {
         userData = JSON.parse(userSelect.value);
         localStorage.setItem('currentUser', JSON.stringify(userData));
         showTimerInterface();
+        populateCaseTypes(); // Cargar las tareas según el usuario
     } else {
         showStatus("Por favor selecciona un usuario", "error");
     }
+}
+
+function populateCaseTypes() {
+    // Limpiar las opciones actuales
+    caseType.innerHTML = '<option value="">Seleccionar...</option>';
+
+    // Determinar las tareas según el usuario
+    let tasks = [];
+    if (userData.name === "Yumaira Gómez") {
+        tasks = [...YUMAIRA_LUIS_TASKS, ...ATC_TASKS]; // Yumaira tiene ambas listas
+    } else if (userData.name === "Luis Silva") {
+        tasks = YUMAIRA_LUIS_TASKS;
+    } else if (userData.name === "Asaf Guevara") {
+        tasks = ASAF_TASKS;
+    } else {
+        tasks = ATC_TASKS; // Tareas por defecto para otros usuarios
+    }
+
+    // Añadir las opciones al select
+    tasks.forEach(task => {
+        const option = document.createElement('option');
+        option.value = task;
+        option.textContent = task;
+        caseType.appendChild(option);
+    });
 }
 
 function logout() {
@@ -234,6 +290,9 @@ function renderActiveCases() {
             <strong>${caseObj.type} - ${caseObj.priority}</strong>
             <div class="timer" style="font-size: 1.2em; margin-top: 5px;">
                 ${(caseObj.hours < 10 ? "0" + caseObj.hours : caseObj.hours)}:${(caseObj.minutes < 10 ? "0" + caseObj.minutes : caseObj.minutes)}:${(caseObj.seconds < 10 ? "0" + caseObj.seconds : caseObj.seconds)}
+            </div>
+            <div style="font-size: 0.9em; color: #555; margin-top: 3px;">
+                Notas: ${caseObj.notes || 'Ninguna'}
             </div>
         `;
 
