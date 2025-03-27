@@ -10,7 +10,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* Cambiado de height a min-height para permitir crecimiento */
+            min-height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
         }
@@ -21,8 +21,8 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             width: 400px;
             text-align: center;
-            max-height: 80vh; /* Limitar la altura máxima del contenedor */
-            overflow-y: auto; /* Permitir desplazamiento vertical */
+            max-height: 80vh;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
         }
@@ -72,13 +72,11 @@
             margin: 10px 0;
             border-radius: 5px;
         }
-        /* Hacer que los casos activos sean desplazables */
         #activeCases {
-            max-height: 300px; /* Limitar la altura de los casos activos */
-            overflow-y: auto; /* Permitir desplazamiento vertical */
+            max-height: 300px;
+            overflow-y: auto;
             margin-top: 10px;
         }
-        /* Asegurar que el formulario de nuevo caso permanezca visible */
         .new-case-form {
             position: sticky;
             top: 0;
@@ -106,17 +104,6 @@
                 <label for="caseType">Tipo de caso:</label>
                 <select id="caseType">
                     <option value="">Seleccionar...</option>
-                    <option value="Consulta">Consulta</option>
-                    <option value="Incidencia">Incidencia</option>
-                    <option value="Reclamo">Reclamo</option>
-                    <option value="Seguimiento">Seguimiento</option>
-                    <option value="Gestión de Pedido">Gestión de Pedido</option>
-                    <option value="Soporte Técnico">Soporte Técnico</option>
-                    <option value="Configuración">Configuración</option>
-                    <option value="Actualización">Actualización</option>
-                    <option value="Capacitación">Capacitación</option>
-                    <option value="Revisión de Datos">Revisión de Datos</option>
-                    <option value="Otros">Otros</option>
                 </select>
                 <br><br>
                 <label for="priority">Prioridad:</label>
