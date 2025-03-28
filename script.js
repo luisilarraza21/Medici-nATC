@@ -55,10 +55,13 @@ loginBtn.addEventListener('click', selectUser);
 logoutBtn.addEventListener('click', logout);
 startNewCaseBtn.addEventListener('click', startNewCase);
 
-// Iniciar el temporizador para notificaciones
-setInterval(checkForNotifications, 60 * 1000); // Verifica cada minuto si es hora de mostrar una notificación
+// Iniciar el temporizador para notificaciones y actualización de tiempos
+setInterval(() => {
+    updateAllCaseTimers();
+    checkForNotifications();
+}, 1000); // Actualiza cada segundo
 
-// Cargar usuarios desde el proxy al iniciar
+// Cargar usuarios y casos desde el proxy/localStorage al iniciar
 window.onload = function() {
     // Mostrar el formulario de selección de usuario al inicio
     document.querySelector('.user-select').style.display = 'block';
@@ -67,6 +70,7 @@ window.onload = function() {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
         userData = JSON.parse(savedUser);
+        loadCasesFromStorage(); // Cargar casos activos desde localStorage
         showTimerInterface();
     }
 };
@@ -115,11 +119,33 @@ function fetchLocalUsers() {
     });
 }
 
+// Cargar casos activos desde localStorage
+function loadCasesFromStorage() {
+    const savedCases = localStorage.getItem('activeCases');
+    if (savedCases) {
+        cases = JSON.parse(savedCases);
+        // Restaurar el estado de los casos
+        cases.forEach(caseObj => {
+            if (caseObj.isRunning) {
+                // No necesitamos setInterval, el tiempo se calcula dinámicamente
+                caseObj.timer = null;
+            }
+        });
+        renderActiveCases();
+    }
+}
+
+// Guardar casos activos en localStorage
+function saveCasesToStorage() {
+    localStorage.setItem('activeCases', JSON.stringify(cases));
+}
+
 // Funciones
 function selectUser() {
     if (userSelect.value) {
         userData = JSON.parse(userSelect.value);
         localStorage.setItem('currentUser', JSON.stringify(userData));
+        loadCasesFromStorage(); // Cargar casos activos al iniciar sesión
         showTimerInterface();
         populateCaseTypes(); // Cargar las tareas según el usuario
     } else {
@@ -160,7 +186,9 @@ function logout() {
     document.querySelector('.user-select').style.display = 'block';
     timerContainer.style.display = 'none';
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('activeCases'); // Limpiar casos al cerrar sesión
     userData = null;
+    cases = [];
 }
 
 function showTimerInterface() {
@@ -191,6 +219,7 @@ function startNewCase() {
     };
 
     cases.push(newCase);
+    saveCasesToStorage(); // Guardar en localStorage
     renderActiveCases();
 
     // Iniciar el caso inmediatamente
@@ -207,7 +236,8 @@ function startCase(caseId) {
     if (!caseObj.isRunning) {
         caseObj.startTime = new Date().getTime() - (caseObj.pausedTime * 1000);
         caseObj.isRunning = true;
-        caseObj.timer = setInterval(() => updateCaseTimer(caseId), 1000);
+        caseObj.timer = null; // No necesitamos setInterval, el tiempo se calcula dinámicamente
+        saveCasesToStorage(); // Guardar en localStorage
         renderActiveCases();
         showStatus(`Caso ${caseObj.type} iniciado`, "success");
     }
@@ -216,9 +246,13 @@ function startCase(caseId) {
 function pauseCase(caseId) {
     const caseObj = cases.find(c => c.id === caseId);
     if (caseObj.isRunning) {
-        clearInterval(caseObj.timer);
+        // Calcular el tiempo transcurrido hasta ahora
+        const now = new Date().getTime();
+        const elapsed = Math.floor((now - caseObj.startTime) / 1000);
+        caseObj.pausedTime = elapsed;
         caseObj.isRunning = false;
-        caseObj.pausedTime = (caseObj.hours * 3600) + (caseObj.minutes * 60) + caseObj.seconds;
+        caseObj.timer = null;
+        saveCasesToStorage(); // Guardar en localStorage
         renderActiveCases();
         showStatus(`Caso ${caseObj.type} en pausa`, "warning");
     }
@@ -230,8 +264,6 @@ function stopCase(caseId) {
         showStatus("No hay un caso activo para finalizar", "error");
         return;
     }
-
-    clearInterval(caseObj.timer);
 
     const endTime = new Date();
     const startDateTime = new Date(caseObj.startTime);
@@ -253,20 +285,20 @@ function stopCase(caseId) {
 
     // Eliminar el caso de la lista de casos activos
     cases = cases.filter(c => c.id !== caseId);
+    saveCasesToStorage(); // Guardar en localStorage
     renderActiveCases();
 }
 
-function updateCaseTimer(caseId) {
-    const caseObj = cases.find(c => c.id === caseId);
-    caseObj.seconds++;
-    if (caseObj.seconds >= 60) {
-        caseObj.seconds = 0;
-        caseObj.minutes++;
-        if (caseObj.minutes >= 60) {
-            caseObj.minutes = 0;
-            caseObj.hours++;
+function updateAllCaseTimers() {
+    cases.forEach(caseObj => {
+        if (caseObj.isRunning) {
+            const now = new Date().getTime();
+            const elapsed = Math.floor((now - caseObj.startTime) / 1000);
+            caseObj.hours = Math.floor(elapsed / 3600);
+            caseObj.minutes = Math.floor((elapsed % 3600) / 60);
+            caseObj.seconds = elapsed % 60;
         }
-    }
+    });
     renderActiveCases();
 }
 
@@ -284,12 +316,23 @@ function renderActiveCases() {
         caseElement.style.borderRadius = '5px';
         caseElement.style.backgroundColor = '#f9f9f9';
 
+        // Calcular el tiempo si el caso está pausado
+        let displayHours = caseObj.hours;
+        let displayMinutes = caseObj.minutes;
+        let displaySeconds = caseObj.seconds;
+        if (!caseObj.isRunning) {
+            const elapsed = caseObj.pausedTime;
+            displayHours = Math.floor(elapsed / 3600);
+            displayMinutes = Math.floor((elapsed % 3600) / 60);
+            displaySeconds = elapsed % 60;
+        }
+
         const infoDiv = document.createElement('div');
         infoDiv.style.flex = '1';
         infoDiv.innerHTML = `
             <strong>${caseObj.type} - ${caseObj.priority}</strong>
             <div class="timer" style="font-size: 1.2em; margin-top: 5px;">
-                ${(caseObj.hours < 10 ? "0" + caseObj.hours : caseObj.hours)}:${(caseObj.minutes < 10 ? "0" + caseObj.minutes : caseObj.minutes)}:${(caseObj.seconds < 10 ? "0" + caseObj.seconds : caseObj.seconds)}
+                ${(displayHours < 10 ? "0" + displayHours : displayHours)}:${(displayMinutes < 10 ? "0" + displayMinutes : displayMinutes)}:${(displaySeconds < 10 ? "0" + displaySeconds : displaySeconds)}
             </div>
             <div style="font-size: 0.9em; color: #555; margin-top: 3px;">
                 Notas: ${caseObj.notes || 'Ninguna'}
