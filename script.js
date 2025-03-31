@@ -37,6 +37,14 @@ const ASAF_TASKS = [
     "Elaboración de plantilla de documentos fiscales"
 ];
 
+const ALEJANDRO_TASKS = [
+    "Crear Copys",
+    "Editar Videos",
+    "Publicar en redes sociales",
+    "Planificar contenido",
+    "Creación de material POP"
+];
+
 // Elementos DOM
 const userSelect = document.getElementById('userSelect');
 const loginBtn = document.getElementById('loginBtn');
@@ -165,6 +173,8 @@ function populateCaseTypes() {
         tasks = YUMAIRA_LUIS_TASKS;
     } else if (userData.name === "Asaf Guevara") {
         tasks = ASAF_TASKS;
+    } else if (userData.name === "Alejandro Palmese") {
+        tasks = ALEJANDRO_TASKS;
     } else {
         tasks = ATC_TASKS; // Tareas por defecto para otros usuarios
     }
