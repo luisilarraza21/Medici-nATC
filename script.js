@@ -174,7 +174,7 @@ function populateCaseTypes() {
     } else if (userData.name === "Asaf Guevara") {
         tasks = ASAF_TASKS;
     } else if (userData.name === "Alejandro Palmese") {
-        tasks = ALEJANDRO_TASKS;
+        tasks = [...ALEJANDRO_TASKS, ...ATC_TASKS]; // Alejandro tiene sus tareas específicas más las de ATC
     } else {
         tasks = ATC_TASKS; // Tareas por defecto para otros usuarios
     }
